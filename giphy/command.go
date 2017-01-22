@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/oklahomer/go-sarah"
 	"github.com/oklahomer/go-sarah/slack"
-	"github.com/oklahomer/go-sarah/slack/webapi"
+	"github.com/oklahomer/golack/webapi"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
@@ -18,14 +18,14 @@ import (
 )
 
 var matchPattern = regexp.MustCompile(`^\.giphy\s*`)
-var Command = sarah.NewCommandBuilder().
+var SlackCommand = sarah.NewCommandBuilder().
 	Identifier("giphy").
 	InputExample(`".giphy" shows trending gifs. ".giphy FOO" shows translated gif for FOO.`).
 	MatchPattern(matchPattern).
-	Func(CommandFunc).
+	Func(SlackCommandFunc).
 	MustBuild()
 
-func CommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
+func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
 	text := sarah.StripMessage(matchPattern, input.Message())
 
 	var attachments []*webapi.MessageAttachment
@@ -145,8 +145,8 @@ type Gif struct {
 		FixedHeightStill       ImageProps `json:"fixed_height_still"`
 		FixedHeightDownsampled ImageProps `json:"fixed_height_downsampled"`
 		FixedWidth             ImageProps `json:"fixed_width"`
-		FixedwidthStill        ImageProps `json:"fixed_width_still"`
-		FixedwidthDownsampled  ImageProps `json:"fixed_width_downsampled"`
+		FixedWidthStill        ImageProps `json:"fixed_width_still"`
+		FixedWidthDownsampled  ImageProps `json:"fixed_width_downsampled"`
 	} `json:"images"`
 }
 

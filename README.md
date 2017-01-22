@@ -20,13 +20,13 @@ func main() {
         configBuf, _ := ioutil.ReadFile("/path/to/adapter/config.yaml")
         slackConfig := slack.NewConfig()
         yaml.Unmarshal(configBuf, slackConfig)
-        slackBot := sarah.NewBot(slack.NewAdapter(slackConfig), sarah.NewCacheConfig(), "/path/to/plugin/config/dir/")
+        slackBot := sarah.NewBot(slack.NewAdapter(slackConfig), sarah.NewCacheConfig())
         
         // Registering commands
-        slackBot.AppendCommand(giphy.Command)
-        slackBot.AppendCommand(pick.Command)
-        slackBot.AppendCommand(randomuser.Command)
-        slackBot.AppendCommand(urlextractor.Command)
+        slackBot.AppendCommand(giphy.SlackCommand)
+        slackBot.AppendCommand(pick.SlackCommand)
+        slackBot.AppendCommand(randomuser.SlackCommand)
+        slackBot.AppendCommand(urlextractor.SlackCommand)
         
         // Initialize Runner and start bot interaction.
         runner := sarah.NewRunner(sarah.NewConfig())

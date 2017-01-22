@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/oklahomer/go-sarah"
 	"github.com/oklahomer/go-sarah/slack"
-	"github.com/oklahomer/go-sarah/slack/webapi"
+	"github.com/oklahomer/golack/webapi"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
@@ -17,15 +17,15 @@ import (
 
 // Command provides default setup of random user command.
 // If different setup with another identifier, match pattern, etc. directly feed CommandFunc to preferred CommandBuilder
-var Command = sarah.NewCommandBuilder().
+var SlackCommand = sarah.NewCommandBuilder().
 	Identifier("random_user").
 	InputExample(".randomuser | .random user").
 	MatchPattern(regexp.MustCompile(`^\.random\s*user`)).
-	Func(CommandFunc).
+	Func(SlackCommandFunc).
 	MustBuild()
 
 // CommandFunc provides the core function of random user.
-func CommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
+func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
 	resp, err := ctxhttp.Get(ctx, http.DefaultClient, "http://api.randomuser.me/")
 	if err != nil {
 		return nil, err

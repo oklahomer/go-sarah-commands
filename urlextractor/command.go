@@ -6,7 +6,7 @@ import (
 	"github.com/mvdan/xurls"
 	"github.com/oklahomer/go-sarah"
 	"github.com/oklahomer/go-sarah/slack"
-	"github.com/oklahomer/go-sarah/slack/webapi"
+	"github.com/oklahomer/golack/webapi"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"net/http"
@@ -14,11 +14,11 @@ import (
 	"time"
 )
 
-var Command = sarah.NewCommandBuilder().
+var SlackCommand = sarah.NewCommandBuilder().
 	Identifier("urlextractor").
 	InputExample("this is my page htt://example.com/foo").
 	MatchPattern(xurls.Strict).
-	Func(CommandFunc).
+	Func(SlackCommandFunc).
 	MustBuild()
 
 type Document struct {
@@ -29,7 +29,7 @@ type Document struct {
 }
 
 // CommandFunc provides the core function of url extractor
-func CommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
+func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
 	urls := xurls.Strict.FindAllString(input.Message(), -1)
 
 	docs := []*Document{}
