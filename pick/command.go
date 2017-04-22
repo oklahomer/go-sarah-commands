@@ -10,7 +10,8 @@ import (
 )
 
 var matchPattern = regexp.MustCompile(`^\.pick\s+.*`)
-var SlackCommand = sarah.NewCommandBuilder().
+var SlackProps = sarah.NewCommandPropsBuilder().
+	BotType(slack.SLACK).
 	Identifier("pick").
 	InputExample(".pick Foo, Bar").
 	MatchPattern(matchPattern).

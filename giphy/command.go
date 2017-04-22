@@ -18,7 +18,8 @@ import (
 )
 
 var matchPattern = regexp.MustCompile(`^\.giphy\s*`)
-var SlackCommand = sarah.NewCommandBuilder().
+var SlackProps = sarah.NewCommandPropsBuilder().
+	BotType(slack.SLACK).
 	Identifier("giphy").
 	InputExample(`".giphy" shows trending gifs. ".giphy FOO" shows translated gif for FOO.`).
 	MatchPattern(matchPattern).

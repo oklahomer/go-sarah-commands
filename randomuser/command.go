@@ -15,9 +15,10 @@ import (
 	"strings"
 )
 
-// Command provides default setup of random user command.
-// If different setup with another identifier, match pattern, etc. directly feed CommandFunc to preferred CommandBuilder
-var SlackCommand = sarah.NewCommandBuilder().
+// SlackProps provides default configuration setup of random user command.
+// If different setup with another identifier, match pattern, etc. directly feed CommandFunc to preferred CommandPropsBuilder.
+var SlackProps = sarah.NewCommandPropsBuilder().
+	BotType(slack.SLACK).
 	Identifier("random_user").
 	InputExample(".randomuser | .random user").
 	MatchPattern(regexp.MustCompile(`^\.random\s*user`)).

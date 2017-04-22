@@ -16,21 +16,24 @@ import (
 )
 
 func main() {
-        // Basic setup
+        options := sarah.NewRunnerOptions()
+
+        // Setup Bot
         configBuf, _ := ioutil.ReadFile("/path/to/adapter/config.yaml")
         slackConfig := slack.NewConfig()
         yaml.Unmarshal(configBuf, slackConfig)
-        slackBot := sarah.NewBot(slack.NewAdapter(slackConfig), sarah.NewCacheConfig())
+        storage := sarah.NewUserContextStorage(sarah.NewCacheConfig())
+        slackBot, _ := sarah.NewBot(slack.NewAdapter(slackConfig), sarah.BotWithStorage(storage))
+        options.Append(sarah.WithBot(slackBot))
         
         // Registering commands
-        slackBot.AppendCommand(giphy.SlackCommand)
-        slackBot.AppendCommand(pick.SlackCommand)
-        slackBot.AppendCommand(randomuser.SlackCommand)
-        slackBot.AppendCommand(urlextractor.SlackCommand)
+        options.Append(sarah.WithCommandProps(giphy.SlackProps))
+        options.Append(sarah.WithCommandProps(pick.SlackProps))
+        options.Append(sarah.WithCommandProps(randomuser.SlackProps))
+        options.Append(sarah.WithCommandProps(urlextractor.SlackProps))
         
         // Initialize Runner and start bot interaction.
-        runner := sarah.NewRunner(sarah.NewConfig())
-        runner.RegisterBot(slackBot)
+        runner, _ := sarah.NewRunner(sarah.NewConfig(), options.Arg())
 
         // Start interaction
         rootCtx := context.Background()

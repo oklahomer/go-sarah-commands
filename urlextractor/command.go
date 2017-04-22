@@ -14,7 +14,8 @@ import (
 	"time"
 )
 
-var SlackCommand = sarah.NewCommandBuilder().
+var SlackProps = sarah.NewCommandPropsBuilder().
+	BotType(slack.SLACK).
 	Identifier("urlextractor").
 	InputExample("this is my page htt://example.com/foo").
 	MatchPattern(xurls.Strict).
