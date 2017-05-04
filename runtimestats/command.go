@@ -3,7 +3,7 @@ package runtimestats
 import (
 	"github.com/oklahomer/go-sarah"
 	"github.com/oklahomer/go-sarah/slack"
-	"github.com/oklahomer/golack/rtmapi"
+	"github.com/oklahomer/golack/slackobject"
 	"github.com/oklahomer/golack/webapi"
 	"golang.org/x/net/context"
 	"regexp"
@@ -12,8 +12,8 @@ import (
 )
 
 type ScheduleConfig struct {
-	TaskSchedule string           `json:"schedule" yaml:"schedule"`
-	ChannelID    rtmapi.ChannelID `json:"channel" yaml:"channel"`
+	TaskSchedule string                `json:"schedule" yaml:"schedule"`
+	ChannelID    slackobject.ChannelID `json:"channel" yaml:"channel"`
 }
 
 func (c *ScheduleConfig) Schedule() string {
@@ -21,10 +21,6 @@ func (c *ScheduleConfig) Schedule() string {
 }
 
 func (c *ScheduleConfig) DefaultDestination() sarah.OutputDestination {
-	if c.ChannelID == "" {
-		return nil
-	}
-
 	return c.ChannelID
 }
 
@@ -32,10 +28,10 @@ func SlackScheduledTaskProps(config *ScheduleConfig) *sarah.ScheduledTaskProps {
 	return sarah.NewScheduledTaskPropsBuilder().
 		BotType(slack.SLACK).
 		ConfigurableFunc(config, func(_ context.Context, conf sarah.TaskConfig) ([]*sarah.ScheduledTaskResult, error) {
-			conf = conf.(*ScheduleConfig)
+			typedConfig := conf.(*ScheduleConfig)
 			return []*sarah.ScheduledTaskResult{{
-				Content:     webapi.NewPostMessageWithAttachments(config.DefaultDestination().(rtmapi.ChannelID).String(), "", messageAttachments()),
-				Destination: config.DefaultDestination(),
+				Content:     webapi.NewPostMessageWithAttachments(typedConfig.ChannelID, "", messageAttachments()),
+				Destination: typedConfig.ChannelID,
 			}}, nil
 		}).
 		Identifier("runtime").

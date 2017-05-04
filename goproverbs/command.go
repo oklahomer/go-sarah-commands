@@ -3,6 +3,7 @@ package goproverbs
 import (
 	"github.com/oklahomer/go-sarah"
 	"github.com/oklahomer/go-sarah/slack"
+	"github.com/oklahomer/golack/slackobject"
 	"github.com/oklahomer/golack/webapi"
 	"golang.org/x/net/context"
 	"math/rand"
@@ -108,8 +109,8 @@ var SlackProps = sarah.NewCommandPropsBuilder().
 	MustBuild()
 
 type taskConfig struct {
-	TaskSchedule string `json:"schedule" yaml:"schedule"`
-	Channel      string `json:"channel" yaml:"channel"`
+	TaskSchedule string                `json:"schedule" yaml:"schedule"`
+	ChannelID    slackobject.ChannelID `json:"channel" yaml:"channel"`
 }
 
 func (c *taskConfig) Schedule() string {
@@ -117,13 +118,13 @@ func (c *taskConfig) Schedule() string {
 }
 
 func (c *taskConfig) DefaultDestination() sarah.OutputDestination {
-	return c.Channel
+	return c.ChannelID
 }
 
 func newTaskConfig() *taskConfig {
 	return &taskConfig{
 		TaskSchedule: "",
-		Channel:      "",
+		ChannelID:    "",
 	}
 }
 
@@ -131,11 +132,11 @@ var SlackScheduledTaskProps = sarah.NewScheduledTaskPropsBuilder().
 	BotType(slack.SLACK).
 	Identifier("goproverbs").
 	ConfigurableFunc(newTaskConfig(), func(_ context.Context, config sarah.TaskConfig) ([]*sarah.ScheduledTaskResult, error) {
-		taskConfig := config.(*taskConfig)
+		typedConfig := config.(*taskConfig)
 		return []*sarah.ScheduledTaskResult{
 			{
-				Content:     webapi.NewPostMessageWithAttachments(taskConfig.Channel, "", messageAttachments()),
-				Destination: taskConfig.Channel,
+				Content:     webapi.NewPostMessageWithAttachments(typedConfig.ChannelID, "", messageAttachments()),
+				Destination: typedConfig.ChannelID,
 			},
 		}, nil
 	}).
