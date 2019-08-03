@@ -1,14 +1,30 @@
 package goproverbs
 
 import (
-	"github.com/oklahomer/go-sarah"
-	"github.com/oklahomer/go-sarah/slack"
+	"context"
+	"github.com/oklahomer/go-sarah/v2"
+	"github.com/oklahomer/go-sarah/v2/slack"
 	"github.com/oklahomer/golack/slackobject"
 	"github.com/oklahomer/golack/webapi"
-	"golang.org/x/net/context"
 	"math/rand"
-	"strings"
 )
+
+func init() {
+	props := sarah.NewScheduledTaskPropsBuilder().
+		BotType(slack.SLACK).
+		Identifier("goproverbs").
+		ConfigurableFunc(newTaskConfig(), func(_ context.Context, config sarah.TaskConfig) ([]*sarah.ScheduledTaskResult, error) {
+			typedConfig := config.(*taskConfig)
+			return []*sarah.ScheduledTaskResult{
+				{
+					Content:     webapi.NewPostMessage(typedConfig.ChannelID, "").WithAttachments(messageAttachments()),
+					Destination: typedConfig.ChannelID,
+				},
+			}, nil
+		}).
+		MustBuild()
+	sarah.RegisterScheduledTaskProps(props)
+}
 
 var proverbs = []*struct {
 	text string
@@ -92,22 +108,6 @@ var proverbs = []*struct {
 	},
 }
 
-var SlackProps = sarah.NewCommandPropsBuilder().
-	BotType(slack.SLACK).
-	Identifier("goproverbs").
-	InputExample(".goproverbs").
-	Func(func(_ context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
-		return slack.NewPostMessageResponse(
-			input,
-			"",
-			messageAttachments(),
-		), nil
-	}).
-	MatchFunc(func(input sarah.Input) bool {
-		return strings.HasPrefix(input.Message(), ".goproverbs")
-	}).
-	MustBuild()
-
 type taskConfig struct {
 	TaskSchedule string                `json:"schedule" yaml:"schedule"`
 	ChannelID    slackobject.ChannelID `json:"channel" yaml:"channel"`
@@ -127,20 +127,6 @@ func newTaskConfig() *taskConfig {
 		ChannelID:    "",
 	}
 }
-
-var SlackScheduledTaskProps = sarah.NewScheduledTaskPropsBuilder().
-	BotType(slack.SLACK).
-	Identifier("goproverbs").
-	ConfigurableFunc(newTaskConfig(), func(_ context.Context, config sarah.TaskConfig) ([]*sarah.ScheduledTaskResult, error) {
-		typedConfig := config.(*taskConfig)
-		return []*sarah.ScheduledTaskResult{
-			{
-				Content:     webapi.NewPostMessageWithAttachments(typedConfig.ChannelID, "", messageAttachments()),
-				Destination: typedConfig.ChannelID,
-			},
-		}, nil
-	}).
-	MustBuild()
 
 func messageAttachments() []*webapi.MessageAttachment {
 	proverb := proverbs[rand.Intn(len(proverbs))]

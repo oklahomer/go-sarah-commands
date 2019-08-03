@@ -1,14 +1,13 @@
 package giphy
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/oklahomer/go-sarah"
-	"github.com/oklahomer/go-sarah/slack"
+	"github.com/oklahomer/go-sarah/v2"
+	"github.com/oklahomer/go-sarah/v2/slack"
 	"github.com/oklahomer/golack/webapi"
-	"golang.org/x/net/context"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,14 +16,18 @@ import (
 	"time"
 )
 
+func init() {
+	props := sarah.NewCommandPropsBuilder().
+		BotType(slack.SLACK).
+		Identifier("giphy").
+		Instruction(`".giphy" shows trending gifs. ".giphy FOO" shows translated gif for FOO.`).
+		MatchPattern(matchPattern).
+		Func(SlackCommandFunc).
+		MustBuild()
+	sarah.RegisterCommandProps(props)
+}
+
 var matchPattern = regexp.MustCompile(`^\.giphy\s*`)
-var SlackProps = sarah.NewCommandPropsBuilder().
-	BotType(slack.SLACK).
-	Identifier("giphy").
-	InputExample(`".giphy" shows trending gifs. ".giphy FOO" shows translated gif for FOO.`).
-	MatchPattern(matchPattern).
-	Func(SlackCommandFunc).
-	MustBuild()
 
 func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
 	text := sarah.StripMessage(matchPattern, input.Message())
@@ -42,10 +45,10 @@ func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandRes
 	}
 
 	if len(attachments) == 0 {
-		return nil, errors.New("No trending gif found.")
+		return nil, errors.New("no trending gif found")
 	}
 
-	return slack.NewPostMessageResponse(input, "", attachments), nil
+	return slack.NewResponse(input, "", slack.RespWithAttachments(attachments))
 }
 
 func trend(ctx context.Context) ([]*webapi.MessageAttachment, error) {
@@ -58,7 +61,7 @@ func trend(ctx context.Context) ([]*webapi.MessageAttachment, error) {
 		return nil, err
 	}
 
-	attachments := []*webapi.MessageAttachment{}
+	var attachments []*webapi.MessageAttachment
 	for _, gif := range response.Data {
 		attachments = append(attachments, &webapi.MessageAttachment{
 			Fallback:  gif.URL,
@@ -100,15 +103,20 @@ func request(ctx context.Context, path string, query *url.Values, response inter
 		RawQuery: query.Encode(),
 	}
 
-	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-
-	resp, err := ctxhttp.Get(reqCtx, http.DefaultClient, endpoint.String())
+	req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
 	if err != nil {
 		return err
 	}
+	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	req.WithContext(reqCtx)
 
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("response status error. status: %d", resp.StatusCode)
 	}

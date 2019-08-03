@@ -1,38 +1,48 @@
 package randomuser
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/oklahomer/go-sarah"
-	"github.com/oklahomer/go-sarah/slack"
+	"github.com/oklahomer/go-sarah/v2"
+	"github.com/oklahomer/go-sarah/v2/slack"
 	"github.com/oklahomer/golack/webapi"
-	"golang.org/x/net/context"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// SlackProps provides default configuration setup of random user command.
-// If different setup with another identifier, match pattern, etc. directly feed CommandFunc to preferred CommandPropsBuilder.
-var SlackProps = sarah.NewCommandPropsBuilder().
-	BotType(slack.SLACK).
-	Identifier("random_user").
-	InputExample(".randomuser | .random user").
-	MatchPattern(regexp.MustCompile(`^\.random\s*user`)).
-	Func(SlackCommandFunc).
-	MustBuild()
+func init() {
+	props := sarah.NewCommandPropsBuilder().
+		BotType(slack.SLACK).
+		Identifier("random_user").
+		Instruction(`Input ".randomuser | .random user" to get randomly created persona.`).
+		MatchPattern(regexp.MustCompile(`^\.random\s*user`)).
+		Func(slackCommandFunc).
+		MustBuild()
+	sarah.RegisterCommandProps(props)
+}
+
 
 // CommandFunc provides the core function of random user.
-func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
-	resp, err := ctxhttp.Get(ctx, http.DefaultClient, "http://api.randomuser.me/")
+func slackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, "http://api.randomuser.me/", nil)
 	if err != nil {
 		return nil, err
 	}
+	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	req.WithContext(reqCtx)
 
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("response status error. status: %d", resp.StatusCode)
 	}
@@ -43,8 +53,8 @@ func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandRes
 	}
 
 	data := &APIResponse{}
-	json.Unmarshal(body, data)
-	if err := json.Unmarshal(body, data); err != nil {
+	err = json.Unmarshal(body, data)
+	if err != nil {
 		return nil, err
 	}
 
@@ -130,7 +140,7 @@ func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandRes
 		},
 	}
 
-	return slack.NewPostMessageResponse(input, "", attachments), nil
+	return slack.NewResponse(input, "", slack.RespWithAttachments(attachments))
 }
 
 type APIResponse struct {

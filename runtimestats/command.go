@@ -1,11 +1,11 @@
 package runtimestats
 
 import (
-	"github.com/oklahomer/go-sarah"
-	"github.com/oklahomer/go-sarah/slack"
+	"context"
+	"github.com/oklahomer/go-sarah/v2"
+	"github.com/oklahomer/go-sarah/v2/slack"
 	"github.com/oklahomer/golack/slackobject"
 	"github.com/oklahomer/golack/webapi"
-	"golang.org/x/net/context"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -30,7 +30,7 @@ func SlackScheduledTaskProps(config *ScheduleConfig) *sarah.ScheduledTaskProps {
 		ConfigurableFunc(config, func(_ context.Context, conf sarah.TaskConfig) ([]*sarah.ScheduledTaskResult, error) {
 			typedConfig := conf.(*ScheduleConfig)
 			return []*sarah.ScheduledTaskResult{{
-				Content:     webapi.NewPostMessageWithAttachments(typedConfig.ChannelID, "", messageAttachments()),
+				Content:     webapi.NewPostMessage(typedConfig.ChannelID, "").WithAttachments(messageAttachments()),
 				Destination: typedConfig.ChannelID,
 			}}, nil
 		}).
@@ -41,10 +41,10 @@ func SlackScheduledTaskProps(config *ScheduleConfig) *sarah.ScheduledTaskProps {
 var SlackProps = sarah.NewCommandPropsBuilder().
 	BotType(slack.SLACK).
 	Identifier("runtime").
-	InputExample(".runtime").
+	Instruction(".runtime").
 	MatchPattern(regexp.MustCompile(`^\.runtime`)).
 	Func(func(_ context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
-		return slack.NewPostMessageResponse(input, "", messageAttachments()), nil
+		return slack.NewResponse(input, "", slack.RespWithAttachments(messageAttachments()));
 	}).
 	MustBuild()
 

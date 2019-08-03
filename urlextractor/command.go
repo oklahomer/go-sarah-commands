@@ -1,26 +1,29 @@
 package urlextractor
 
 import (
+	"context"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mvdan/xurls"
-	"github.com/oklahomer/go-sarah"
-	"github.com/oklahomer/go-sarah/slack"
+	"github.com/oklahomer/go-sarah/v2"
+	"github.com/oklahomer/go-sarah/v2/slack"
 	"github.com/oklahomer/golack/webapi"
-	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var SlackProps = sarah.NewCommandPropsBuilder().
-	BotType(slack.SLACK).
-	Identifier("urlextractor").
-	InputExample("this is my page htt://example.com/foo").
-	MatchPattern(xurls.Strict).
-	Func(SlackCommandFunc).
-	MustBuild()
+func init() {
+	props := sarah.NewCommandPropsBuilder().
+		BotType(slack.SLACK).
+		Identifier("urlextractor").
+		Instruction(`"This is my page http://example.com/foo" to get the information about http://example.com/foo`).
+		MatchPattern(xurls.Strict).
+		Func(slackCommandFunc).
+		MustBuild()
+	sarah.RegisterCommandProps(props)
+}
 
 type Document struct {
 	URL         string
@@ -30,10 +33,10 @@ type Document struct {
 }
 
 // CommandFunc provides the core function of url extractor
-func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
+func slackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandResponse, error) {
 	urls := xurls.Strict.FindAllString(input.Message(), -1)
 
-	docs := []*Document{}
+	var docs []*Document
 	for _, url := range urls {
 		doc, err := extractContent(ctx, url)
 		if err != nil {
@@ -43,7 +46,7 @@ func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandRes
 		docs = append(docs, doc)
 	}
 
-	attachments := []*webapi.MessageAttachment{}
+	var attachments []*webapi.MessageAttachment
 	for _, doc := range docs {
 		attachments = append(attachments, &webapi.MessageAttachment{
 			Fallback:   fmt.Sprintf("title: %s. description: %s.", doc.Title, doc.Description),
@@ -60,7 +63,7 @@ func SlackCommandFunc(ctx context.Context, input sarah.Input) (*sarah.CommandRes
 		return nil, fmt.Errorf("error on fetching URL content(s): %s", strings.Join(urls, ","))
 	}
 
-	return slack.NewPostMessageResponse(input, "", attachments), nil
+	return slack.NewResponse(input, "", slack.RespWithAttachments(attachments))
 }
 
 func extractContent(ctx context.Context, url string) (*Document, error) {
